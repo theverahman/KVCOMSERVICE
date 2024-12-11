@@ -22,6 +22,16 @@ namespace KVCOMSERVICE
             _exePath = exePath;
         }
 
+        public void StartService(string[] args)
+        {
+            OnStart(args);
+        }
+
+        public void StopService()
+        {
+            OnStop();
+        }
+
         protected override void OnStart(string[] args)
         {
             if (args.Length > 0)
@@ -29,7 +39,7 @@ namespace KVCOMSERVICE
                 _exePath = args[0]; // Get the executable path from the arguments
             }
             StartProcess();
-            _timer = new Timer(CheckProcess, null, 1000, 1000); // Check every second
+            _timer = new Timer(CheckProcess, null, 60000, 60000); // Check every 60 second
         }
 
         protected override void OnStop()
@@ -48,7 +58,7 @@ namespace KVCOMSERVICE
                     {
                         FileName = _exePath,
                         UseShellExecute = false,
-                        CreateNoWindow = true // Set to true if you want to run it in the background
+                        CreateNoWindow = false // Set to true if you want to run it in the background
                     }
                 };
 
