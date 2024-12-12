@@ -1,38 +1,57 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.ServiceProcess;
 using System.Diagnostics;
-using System.Threading;
-using System.Text;
+using System.ServiceProcess;
 
 namespace KVCOMSERVICE
 {
     internal static class Program
     {
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
         static void Main(string[] args)
         {
             if (Environment.UserInteractive)
             {
-                // If running in debug mode, run the service directly
-                var service = new Service1(args.Length > 0 ? args[0] : string.Empty);
-                service.StartService(args);
-                Console.WriteLine("Press any key to stop the service...");
-                Console.ReadKey();
-                service.StopService();
+                RunInDebugMode(args);
             }
             else
             {
-                // If running as a service, run the service normally
-                ServiceBase[] ServicesToRun;
-                ServicesToRun = new ServiceBase[]
-                {
-                    new Service1(args.Length > 0 ? args[0] : string.Empty)
-                };
-                ServiceBase.Run(ServicesToRun);
+                RunAsService(args);
+            }
+        }
+
+        private static void RunInDebugMode(string[] args)
+        {
+            var executableSource = new ServiceExecutableSource(GetExecutablePathForDebugMode());
+            var service = new Service1(executableSource, args);
+            service.StartService(args);
+            // Wait for the service to stop
+            while (true)
+            {
+                System.Threading.Thread.Sleep(1000);
+            }
+        }
+
+        private static void RunAsService(string[] args)
+        {
+            var executableSource = new ServiceExecutableSource(GetExecutablePathFromArguments(args));
+            var service = new Service1(executableSource, args);
+            ServiceBase[] ServicesToRun = new ServiceBase[] { service };
+            ServiceBase.Run(ServicesToRun);
+        }
+
+        private static string GetExecutablePathForDebugMode()
+        {
+            return @"D:\PROJECT\VISUAL_STUDIO_PROJECTS\KVCOMSERVER\bin\Debug\net8.0-windows\KVCOMSERVER.exe";
+        }
+
+        private static string GetExecutablePathFromArguments(string[] args)
+        {
+            if (args.Length > 0)
+            {
+                return args[0];
+            }
+            else
+            {
+                throw new ArgumentException("Executable path not provided as an argument.");
             }
         }
     }

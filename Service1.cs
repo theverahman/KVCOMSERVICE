@@ -1,25 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
-using System.Linq;
 using System.ServiceProcess;
 using System.Threading;
-using System.Text;
 
 namespace KVCOMSERVICE
 {
     public partial class Service1 : ServiceBase
     {
+        private readonly ServiceExecutableSource _executableSource;
+        private int _checkInterval;
         private Process _process;
         private Timer _timer;
-        private string _exePath;
 
-        public Service1(string exePath)
+        public Service1(ServiceExecutableSource executableSource, string[] args)
         {
             InitializeComponent();
-            _exePath = exePath;
+            _executableSource = executableSource;
+            _checkInterval = GetCheckIntervalFromArguments(args);
         }
 
         public void StartService(string[] args)
@@ -34,12 +31,8 @@ namespace KVCOMSERVICE
 
         protected override void OnStart(string[] args)
         {
-            if (args.Length > 0)
-            {
-                _exePath = args[0]; // Get the executable path from the arguments
-            }
             StartProcess();
-            _timer = new Timer(CheckProcess, null, 60000, 60000); // Check every 60 second
+            _timer = new Timer(CheckProcess, null, _checkInterval, _checkInterval);
         }
 
         protected override void OnStop()
@@ -56,14 +49,14 @@ namespace KVCOMSERVICE
                 {
                     StartInfo = new ProcessStartInfo
                     {
-                        FileName = _exePath,
+                        FileName = _executableSource.GetExecutablePath(),
+                        WorkingDirectory = _executableSource.GetExecutableFolder(),
                         UseShellExecute = false,
-                        CreateNoWindow = false // Set to true if you want to run it in the background
+                        CreateNoWindow = false
                     }
                 };
 
                 _process.Start();
-                EventLog.WriteEntry("ExeMonitorService", $"Started process: {_process.Id}", EventLogEntryType.Information);
             }
         }
 
@@ -74,7 +67,6 @@ namespace KVCOMSERVICE
                 _process.Kill();
                 _process.Dispose();
                 _process = null;
-                EventLog.WriteEntry("ExeMonitorService", "Stopped process.", EventLogEntryType.Information);
             }
         }
 
@@ -82,9 +74,24 @@ namespace KVCOMSERVICE
         {
             if (_process == null || _process.HasExited)
             {
-                EventLog.WriteEntry("ExeMonitorService", "Process has exited. Restarting...", EventLogEntryType.Warning);
                 StartProcess();
             }
+        }
+
+        private int GetCheckIntervalFromArguments(string[] args)
+        {
+            foreach (string arg in args)
+            {
+                if (arg.StartsWith("/checkinterval:"))
+                {
+                    string value = arg.Substring(14);
+                    if (int.TryParse(value, out int interval))
+                    {
+                        return interval;
+                    }
+                }
+            }
+            return 5000; // default value
         }
     }
 }
