@@ -52,11 +52,15 @@ namespace KVCOMSERVICE
                         FileName = _executableSource.GetExecutablePath(),
                         WorkingDirectory = _executableSource.GetExecutableFolder(),
                         UseShellExecute = false,
-                        CreateNoWindow = false
+                        CreateNoWindow = false,
+                        RedirectStandardError = true
                     }
                 };
 
+                _process.ErrorDataReceived += Process_ErrorDataReceived;
+                _process.Exited += Process_Exited;
                 _process.Start();
+                _process.BeginErrorReadLine();
             }
         }
 
@@ -64,9 +68,19 @@ namespace KVCOMSERVICE
         {
             if (_process != null && !_process.HasExited)
             {
-                _process.Kill();
-                _process.Dispose();
-                _process = null;
+                try
+                {
+                    _process.Kill();
+                }
+                catch (Exception ex)
+                {
+                    //EventLog.WriteEntry("Service", "Error stopping process: " + ex.Message, EventLogEntryType.Error);
+                }
+                finally
+                {
+                    _process.Dispose();
+                    _process = null;
+                }
             }
         }
 
@@ -76,6 +90,60 @@ namespace KVCOMSERVICE
             {
                 StartProcess();
             }
+            else
+            {
+                try
+                {
+                    if (_process.Responding == false)
+                    {
+                        StopProcess();
+                        StartProcess();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //EventLog.WriteEntry("Service", "Error checking process: " + ex.Message, EventLogEntryType.Error);
+                    StopProcess();
+                    StartProcess();
+                }
+            }
+        }
+
+        private void Process_ErrorDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            if (e.Data != null)
+            {
+                string errorMessage = e.Data;
+                if (errorMessage.Contains("Exception") || errorMessage.Contains("Error"))
+                {
+                    //EventLog.WriteEntry("Service", "Unhandled exception in process: " + errorMessage, EventLogEntryType.Error);
+                    ShutdownAndRestartProcess();
+                }
+                else
+                {
+                    //EventLog.WriteEntry("Service", "Error in process: " + errorMessage, EventLogEntryType.Error);
+                }
+            }
+        }
+
+        private void Process_Exited(object sender, EventArgs e)
+        {
+            int exitCode = _process.ExitCode;
+            if (exitCode != 0)
+            {
+                //EventLog.WriteEntry("Service", "Process exited with code " + exitCode, EventLogEntryType.Error);
+                ShutdownAndRestartProcess();
+            }
+            else
+            {
+                //EventLog.WriteEntry("Service", "Process exited normally", EventLogEntryType.Information);
+            }
+        }
+
+        private void ShutdownAndRestartProcess()
+        {
+            StopProcess();
+            StartProcess();
         }
 
         private int GetCheckIntervalFromArguments(string[] args)
@@ -91,7 +159,7 @@ namespace KVCOMSERVICE
                     }
                 }
             }
-            return 5000; // default value
+            return 10000; // default value
         }
     }
 }
