@@ -8,6 +8,8 @@ namespace KVCOMSERVICE
     {
         static void Main(string[] args)
         {
+            RunAsService(args);
+            /*
             if (Environment.UserInteractive)
             {
                 RunInDebugMode(args);
@@ -16,6 +18,7 @@ namespace KVCOMSERVICE
             {
                 RunAsService(args);
             }
+            */
         }
 
         private static void RunInDebugMode(string[] args)
