@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Configuration;
 using System.Diagnostics;
 using System.ServiceProcess;
 using System.Threading;
+
 
 namespace KVCOMSERVICE
 {

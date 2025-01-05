@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration;
 using System.Diagnostics;
 using System.ServiceProcess;
 
@@ -9,6 +10,7 @@ namespace KVCOMSERVICE
         static void Main(string[] args)
         {
             RunAsService(args);
+            //RunInDebugMode(args);
             /*
             if (Environment.UserInteractive)
             {
