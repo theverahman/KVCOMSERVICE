@@ -15,9 +15,17 @@ namespace KVCOMSERVICE
             InitializeComponent();
         }
 
+        protected override void OnBeforeInstall(IDictionary savedState)
+        {
+            string parameter = "D:\\PROJECT\\VISUAL_STUDIO_PROJECTS\\KVCOMSERVER\\bin\\Debug\\net8.0-windows\\KVCOMSERVER.exe\" \"/checkinterval:1000";
+            Context.Parameters["assemblypath"] = "\"" + Context.Parameters["assemblypath"] + "\" \"" + parameter + "\"";
+            base.OnBeforeInstall(savedState);
+        }
+
         private void serviceInstaller1_AfterInstall(object sender, InstallEventArgs e)
         {
 
         }
     }
 }
+

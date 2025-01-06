@@ -3,27 +3,37 @@ using System.Configuration;
 using System.Diagnostics;
 using System.ServiceProcess;
 using System.Threading;
+using System.Diagnostics;
 
 
 namespace KVCOMSERVICE
 {
     public partial class Service1 : ServiceBase
     {
-        private readonly ServiceExecutableSource _executableSource;
+        private ServiceExecutableSource _executableSource;
         private int _checkInterval;
         private Process _process;
         private Timer _timer;
+        private EventLog _eventLog1;
 
-        public Service1(ServiceExecutableSource executableSource, string[] args)
+        public Service1(string[] args)
         {
             InitializeComponent();
-            _executableSource = executableSource;
+            _eventLog1 = new EventLog();
+            if (!EventLog.SourceExists("KVCOMSVC"))
+            {
+                EventLog.CreateEventSource("KVCOMSVC", "KVCOMSVC_LOG");
+            }
+            _eventLog1.Source = "KVCOMSVC";
+            _eventLog1.Log = "KVCOMSVC_LOG";
+
+            _executableSource = new ServiceExecutableSource(GetExecutablePathFromArguments(args));
             _checkInterval = GetCheckIntervalFromArguments(args);
         }
 
-        public void StartService(string[] args)
+        public void StartService(string[] argsvc)
         {
-            OnStart(args);
+            OnStart(argsvc);
         }
 
         public void StopService()
@@ -31,8 +41,15 @@ namespace KVCOMSERVICE
             OnStop();
         }
 
-        protected override void OnStart(string[] args)
+        protected override void OnStart(string[] argsvc)
         {
+            _eventLog1.WriteEntry("In OnStart.");
+            _eventLog1.WriteEntry(argsvc[0]);
+            _executableSource = new ServiceExecutableSource(GetExecutablePathFromArguments(argsvc));
+            _eventLog1.WriteEntry(_executableSource.GetExecutablePath());
+            _checkInterval = GetCheckIntervalFromArguments(argsvc);
+            _eventLog1.WriteEntry(_checkInterval.ToString());
+
             StartProcess();
             _timer = new Timer(CheckProcess, null, _checkInterval, _checkInterval);
         }
@@ -154,7 +171,7 @@ namespace KVCOMSERVICE
             {
                 if (arg.StartsWith("/checkinterval:"))
                 {
-                    string value = arg.Substring(14);
+                    string value = arg.Substring(15);
                     if (int.TryParse(value, out int interval))
                     {
                         return interval;
@@ -162,6 +179,18 @@ namespace KVCOMSERVICE
                 }
             }
             return 10000; // default value
+        }
+
+        private static string GetExecutablePathFromArguments(string[] args)
+        {
+            if (args.Length > 0)
+            {
+                return args[0];
+            }
+            else
+            {
+                throw new ArgumentException("Executable path not provided as an argument.");
+            }
         }
     }
 }

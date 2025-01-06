@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Configuration;
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.ServiceProcess;
 
 namespace KVCOMSERVICE
@@ -9,7 +10,17 @@ namespace KVCOMSERVICE
     {
         static void Main(string[] args)
         {
-            RunAsService(args);
+            if (args.Length > 0)
+            {
+                RunAsService(args);
+            }
+            else
+            {
+                string[] arguments = Environment.GetCommandLineArgs();
+                RunAsService(arguments);
+            }
+            
+
             //RunInDebugMode(args);
             /*
             if (Environment.UserInteractive)
@@ -23,41 +34,24 @@ namespace KVCOMSERVICE
             */
         }
 
-        private static void RunInDebugMode(string[] args)
+        private static void RunInDebugMode()
         {
-            var executableSource = new ServiceExecutableSource(GetExecutablePathForDebugMode());
-            var service = new Service1(executableSource, args);
+            var args = GetExecutablePathForDebugMode();
+            var service = new Service1(args);
             service.StartService(args);
             // Wait for the service to stop
-            while (true)
-            {
-                System.Threading.Thread.Sleep(1000);
-            }
         }
 
         private static void RunAsService(string[] args)
         {
-            var executableSource = new ServiceExecutableSource(GetExecutablePathFromArguments(args));
-            var service = new Service1(executableSource, args);
+            var service = new Service1(args);
             ServiceBase[] ServicesToRun = new ServiceBase[] { service };
             ServiceBase.Run(ServicesToRun);
         }
 
-        private static string GetExecutablePathForDebugMode()
+        private static string[] GetExecutablePathForDebugMode()
         {
-            return @"D:\PROJECT\VISUAL_STUDIO_PROJECTS\KVCOMSERVER\bin\Debug\net8.0-windows\KVCOMSERVER.exe";
-        }
-
-        private static string GetExecutablePathFromArguments(string[] args)
-        {
-            if (args.Length > 0)
-            {
-                return args[0];
-            }
-            else
-            {
-                throw new ArgumentException("Executable path not provided as an argument.");
-            }
+            return new string[]  { @"D:\PROJECT\VISUAL_STUDIO_PROJECTS\KVCOMSERVER\bin\Debug\net8.0-windows\KVCOMSERVER.exe" };
         }
     }
 }
