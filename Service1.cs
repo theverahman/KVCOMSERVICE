@@ -72,7 +72,9 @@ namespace KVCOMSERVICE
                         WorkingDirectory = _executableSource.GetExecutableFolder(),
                         UseShellExecute = false,
                         CreateNoWindow = false,
-                        RedirectStandardError = true
+                        RedirectStandardError = true,
+                        WindowStyle = ProcessWindowStyle.Normal,
+                        ErrorDialog = true
                     }
                 };
 
